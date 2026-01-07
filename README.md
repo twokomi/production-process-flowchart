@@ -13,10 +13,11 @@
   - 단계별 화살표로 공정 흐름 시각화
 
 ## URLs
+- **Production (Live)**: https://production-process-flowchart.pages.dev ✅
+- **Deployment URL**: https://d811d7f7.production-process-flowchart.pages.dev
+- **GitHub**: https://github.com/twokomi/production-process-flowchart
 - **샌드박스 개발**: https://3000-iiy9r61g9y1paopb06t9t-a402f90a.sandbox.novita.ai
 - **로컬 개발**: http://localhost:3000
-- **GitHub**: (배포 후 추가 예정)
-- **Production**: (Cloudflare Pages 배포 후 추가 예정)
 
 ## 현재 완료된 기능
 
@@ -220,9 +221,12 @@ pm2 delete webapp           # 중지
 - 성능 모니터링
 
 ## 배포 상태
-- **플랫폼**: Cloudflare Pages (준비 완료)
-- **상태**: 🟢 로컬 개발 완료 / 배포 준비 완료
-- **최종 업데이트**: 2026-01-07
+- **플랫폼**: Cloudflare Pages
+- **상태**: ✅ **프로덕션 배포 완료**
+- **최종 배포**: 2026-01-07
+- **Database**: production-process-flowchart-db (D1)
+- **Database ID**: 6b078188-7505-433b-acab-11c5d95b8703
+- **Live URL**: https://production-process-flowchart.pages.dev
 
 ## 데이터 현황
 - **공정 단계**: 57개 (전체 공정)
