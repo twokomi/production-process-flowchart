@@ -204,57 +204,93 @@ app.delete('/api/steps/:id', async (c) => {
 
 // ===== Frontend Routes =====
 
-// Main page
+// Main page - Mobile UI
 app.get('/', (c) => {
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>생산 공정 플로우차트</title>
-        <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/mobile-styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gray-50">
-        <div class="container mx-auto px-4 py-6">
-            <header class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                    <i class="fas fa-project-diagram mr-2"></i>
-                    생산 공정 플로우차트
+    <body>
+    <body>
+        <!-- Category Selection View -->
+        <div id="categoryView">
+            <header style="background: white; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h1 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin: 0; text-align: center;">
+                    <i class="fas fa-industry" style="margin-right: 0.5rem;"></i>
+                    생산 공정 관리
                 </h1>
-                <p class="text-gray-600">각 단계를 터치하여 판단 기준과 관련 자료를 확인하세요</p>
+                <p style="text-align: center; color: #6b7280; font-size: 0.875rem; margin: 0.5rem 0 0 0;">
+                    CS WIND Production Process
+                </p>
             </header>
             
-            <div id="stepsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Steps will be loaded here -->
+            <div id="categoryList">
+                <!-- Category cards will be loaded here -->
             </div>
             
-            <!-- Loading indicator -->
-            <div id="loading" class="text-center py-8">
-                <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-                <p class="mt-2 text-gray-600">데이터 로딩 중...</p>
+            <div id="loading" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #3b82f6;"></i>
+                <p style="margin-top: 1rem; color: #6b7280;">데이터 로딩 중...</p>
             </div>
         </div>
         
-        <!-- Modal for step details -->
-        <div id="stepModal" class="modal">
-            <div class="modal-content w-full md:w-2/3 lg:w-1/2">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="modalTitle" class="text-2xl font-bold text-gray-800"></h2>
-                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times text-2xl"></i>
+        <!-- Process Step View -->
+        <div id="processView">
+            <!-- Process Header -->
+            <div class="process-header-mobile">
+                <div class="process-header-top">
+                    <button class="back-button-mobile" onclick="backToCategories()">
+                        <i class="fas fa-arrow-left"></i>
                     </button>
+                    <div id="currentCategoryName">Category</div>
                 </div>
-                <div id="modalContent">
-                    <!-- Content will be loaded here -->
+                <div class="process-progress-mobile">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="progressText" class="progress-text">0 / 0</div>
                 </div>
+            </div>
+            
+            <!-- Step Question -->
+            <div id="stepQuestion">
+                <!-- Step content will be loaded here -->
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons-mobile">
+                <button id="prevBtn" class="btn-prev-mobile" onclick="goPrevious()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button class="btn-no-mobile" onclick="answerNo()">
+                    <i class="fas fa-times-circle"></i>
+                    <span>NO</span>
+                </button>
+                <button class="btn-yes-mobile" onclick="answerYes()">
+                    <i class="fas fa-check-circle"></i>
+                    <span>YES</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Criteria Detail Modal -->
+        <div id="criteriaModal">
+            <div id="criteriaModalContent">
+                <button class="modal-close-button" onclick="closeCriteriaModal()" style="position: fixed; top: 1rem; right: 1rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+                <!-- Criteria details will be loaded here -->
             </div>
         </div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
+        <script src="/static/mobile-app.js"></script>
     </body>
     </html>
   `)
