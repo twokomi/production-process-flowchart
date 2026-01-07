@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "webapp-production",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_name": "production-process-flowchart-db",
+      "database_id": "6b078188-7505-433b-acab-11c5d95b8703"
     }
   ]
 }
