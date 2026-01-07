@@ -223,7 +223,7 @@ app.get('/', (c) => {
             <header style="background: white; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <h1 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin: 0; text-align: center;">
                     <i class="fas fa-industry" style="margin-right: 0.5rem;"></i>
-                    생산 공정 관리
+                    Production Process Management
                 </h1>
                 <p style="text-align: center; color: #6b7280; font-size: 0.875rem; margin: 0.5rem 0 0 0;">
                     CS WIND Production Process
@@ -236,7 +236,7 @@ app.get('/', (c) => {
             
             <div id="loading" style="text-align: center; padding: 2rem;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #3b82f6;"></i>
-                <p style="margin-top: 1rem; color: #6b7280;">데이터 로딩 중...</p>
+                <p style="margin-top: 1rem; color: #6b7280;">Loading data...</p>
             </div>
         </div>
         

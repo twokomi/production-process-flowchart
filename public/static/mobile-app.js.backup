@@ -10,35 +10,35 @@ const categories = {
   CT: {
     name: 'CT',
     fullName: 'Cold Test',
-    description: 'From initial review to plate cutting',
+    description: '초기 검토부터 플레이트 절단까지',
     color: '#3b82f6',
     icon: 'fa-snowflake'
   },
   BT: {
     name: 'BT',
     fullName: 'Blast Test',
-    description: 'From cutting to BT release',
+    description: '절단부터 BT 해제까지',
     color: '#8b5cf6',
     icon: 'fa-hammer'
   },
   WT: {
     name: 'WT',
     fullName: 'Wash Test',
-    description: 'From wash bay to WT release',
+    description: '세척부터 WT 해제까지',
     color: '#06b6d4',
     icon: 'fa-water'
   },
   IM: {
     name: 'IM',
     fullName: 'Installation & Mechanical',
-    description: 'From installation to IM release',
+    description: '설치부터 IM 해제까지',
     color: '#f59e0b',
     icon: 'fa-tools'
   },
   GT: {
     name: 'GT',
     fullName: 'Gate',
-    description: 'From IM release to finish',
+    description: 'IM 해제부터 완료까지',
     color: '#10b981',
     icon: 'fa-check-circle'
   }
@@ -99,7 +99,7 @@ function renderCategoryList() {
           <div class="progress-bar">
             <div class="progress-fill" style="width: ${progress}%; background: ${cat.color}"></div>
           </div>
-          <div class="progress-text">${cat.completedCount} / ${cat.totalSteps} Completed</div>
+          <div class="progress-text">${cat.completedCount} / ${cat.totalSteps} 완료</div>
         </div>
       </div>
     `;
@@ -126,7 +126,7 @@ async function selectCategory(categoryKey) {
   categorySteps = cat.steps || [];
   
   if (categorySteps.length === 0) {
-    alert('No steps in this category.');
+    alert('이 카테고리에 단계가 없습니다.');
     return;
   }
   
@@ -164,7 +164,7 @@ async function loadCurrentStep() {
     
   } catch (error) {
     console.error('Failed to load step:', error);
-    alert('Failed to load step information.');
+    alert('단계 정보를 불러오는데 실패했습니다.');
   }
 }
 
@@ -207,7 +207,7 @@ function renderStepQuestion(step) {
         <div class="criteria-section-mobile">
           <div class="criteria-header-mobile" onclick="toggleCriteria()">
             <i class="fas fa-clipboard-list mr-2"></i>
-            <span>Decision 기준 보기</span>
+            <span>판단 기준 보기</span>
             <span class="criteria-count">(${step.criteria.length})</span>
             <i class="fas fa-chevron-down ml-auto toggle-icon-criteria"></i>
           </div>
@@ -218,7 +218,7 @@ function renderStepQuestion(step) {
       ` : `
         <div class="no-criteria-mobile">
           <i class="fas fa-exclamation-circle mr-2"></i>
-          등록된 Decision 기준이 없습니다.
+          등록된 판단 기준이 없습니다.
         </div>
       `}
     </div>
@@ -254,11 +254,11 @@ function renderCriteriaList(criteria) {
 
 function getStepTypeLabel(type) {
   switch(type) {
-    case 'start': return 'Start';
-    case 'process': return 'Process';
-    case 'decision': return 'Decision';
-    case 'end': return 'Completed';
-    default: return 'Step';
+    case 'start': return '시작';
+    case 'process': return '공정';
+    case 'decision': return '판단';
+    case 'end': return '완료';
+    default: return '단계';
   }
 }
 
@@ -319,13 +319,13 @@ async function showCriteriaDetails(criteriaId) {
         
         ${criteria.documents && criteria.documents.length > 0 ? `
           <div class="documents-section-mobile">
-            <h4 class="documents-title-mobile">Related Documents</h4>
+            <h4 class="documents-title-mobile">관련 자료</h4>
             ${renderDocumentsList(criteria.documents)}
           </div>
         ` : `
           <div class="no-documents-mobile">
             <i class="fas fa-folder-open mr-2"></i>
-            No related documents registered.
+            등록된 관련 자료가 없습니다.
           </div>
         `}
       </div>
@@ -383,12 +383,12 @@ function getDocumentIcon(type) {
 
 function getDocumentTypeLabel(type) {
   switch(type) {
-    case 'work_instruction': return 'Work Instruction';
-    case 'quality_spec': return 'Quality Spec';
-    case 'reference': return 'Reference';
-    case 'image': return 'Image';
-    case 'video': return 'Video';
-    default: return 'Document';
+    case 'work_instruction': return '작업지침서';
+    case 'quality_spec': return '품질기준서';
+    case 'reference': return '참고자료';
+    case 'image': return '이미지';
+    case 'video': return '동영상';
+    default: return '문서';
   }
 }
 
@@ -420,7 +420,7 @@ function answerYes() {
 function answerNo() {
   // For NO answer, we might want to show a message or take different action
   // For now, we'll just show an alert and not proceed
-  alert('불합격 처리되었습니다. 해당 Step를 다시 확인해주세요.');
+  alert('불합격 처리되었습니다. 해당 단계를 다시 확인해주세요.');
   
   // Optionally, you could still move to next step or stay at current
   // For this implementation, we stay at current step
@@ -478,14 +478,14 @@ function showCategoryCompleted() {
       <div class="completion-icon" style="color: ${cat.color}">
         <i class="fas fa-check-circle"></i>
       </div>
-      <h2 class="completion-title">${cat.fullName} Completed!</h2>
+      <h2 class="completion-title">${cat.fullName} 완료!</h2>
       <p class="completion-message">
-        모든 Step를 Completed했습니다.<br>
-        Proceed to another category or return to main.
+        모든 단계를 완료했습니다.<br>
+        다른 카테고리를 진행하거나 메인으로 돌아가세요.
       </p>
       <button onclick="backToCategories()" class="btn-completion">
         <i class="fas fa-home mr-2"></i>
-        Back to Main
+        메인으로 돌아가기
       </button>
     </div>
   `;
