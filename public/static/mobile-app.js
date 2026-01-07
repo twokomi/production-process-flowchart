@@ -73,6 +73,12 @@ async function loadCategoryStatus() {
 // Render category list (상단 Status List)
 function renderCategoryList() {
   const container = document.getElementById('categoryList');
+  const loading = document.getElementById('loading');
+  
+  // Hide loading indicator
+  if (loading) {
+    loading.style.display = 'none';
+  }
   
   let html = '';
   
