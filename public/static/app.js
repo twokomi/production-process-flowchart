@@ -1,19 +1,26 @@
 // Global variables
 let allSteps = [];
+let allConnections = [];
 
 // Load all steps when page loads
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSteps();
 });
 
-// Load steps from API
+// Load steps and connections from API
 async function loadSteps() {
   const loading = document.getElementById('loading');
   const container = document.getElementById('stepsContainer');
   
   try {
-    const response = await axios.get('/api/steps');
-    allSteps = response.data;
+    // Load both steps and connections
+    const [stepsResponse, connectionsResponse] = await Promise.all([
+      axios.get('/api/steps'),
+      axios.get('/api/connections')
+    ]);
+    
+    allSteps = stepsResponse.data;
+    allConnections = connectionsResponse.data;
     
     loading.style.display = 'none';
     
@@ -27,47 +34,8 @@ async function loadSteps() {
       return;
     }
     
-    // Group steps by type
-    const startSteps = allSteps.filter(s => s.step_type === 'start');
-    const processSteps = allSteps.filter(s => s.step_type === 'process');
-    const decisionSteps = allSteps.filter(s => s.step_type === 'decision');
-    const endSteps = allSteps.filter(s => s.step_type === 'end');
-    
-    let html = '';
-    
-    // Render start steps
-    if (startSteps.length > 0) {
-      html += '<div class="col-span-full"><h2 class="text-xl font-bold text-gray-700 mb-3"><i class="fas fa-play-circle mr-2"></i>시작</h2></div>';
-      startSteps.forEach(step => {
-        html += renderStepCard(step);
-      });
-    }
-    
-    // Render process steps
-    if (processSteps.length > 0) {
-      html += '<div class="col-span-full mt-4"><h2 class="text-xl font-bold text-gray-700 mb-3"><i class="fas fa-cogs mr-2"></i>공정 단계</h2></div>';
-      processSteps.forEach(step => {
-        html += renderStepCard(step);
-      });
-    }
-    
-    // Render decision steps
-    if (decisionSteps.length > 0) {
-      html += '<div class="col-span-full mt-4"><h2 class="text-xl font-bold text-gray-700 mb-3"><i class="fas fa-question-circle mr-2"></i>판단 단계</h2></div>';
-      decisionSteps.forEach(step => {
-        html += renderStepCard(step);
-      });
-    }
-    
-    // Render end steps
-    if (endSteps.length > 0) {
-      html += '<div class="col-span-full mt-4"><h2 class="text-xl font-bold text-gray-700 mb-3"><i class="fas fa-stop-circle mr-2"></i>종료</h2></div>';
-      endSteps.forEach(step => {
-        html += renderStepCard(step);
-      });
-    }
-    
-    container.innerHTML = html;
+    // Render flow chart by position
+    renderFlowChart();
     
   } catch (error) {
     console.error('Failed to load steps:', error);
@@ -83,25 +51,86 @@ async function loadSteps() {
   }
 }
 
-// Render a step card
-function renderStepCard(step) {
+// Render flow chart with position-based layout
+function renderFlowChart() {
+  const container = document.getElementById('stepsContainer');
+  
+  // Group steps by position_y (row)
+  const rows = {};
+  allSteps.forEach(step => {
+    const row = step.position_y || 0;
+    if (!rows[row]) rows[row] = [];
+    rows[row].push(step);
+  });
+  
+  // Sort rows
+  const sortedRows = Object.keys(rows).sort((a, b) => parseInt(a) - parseInt(b));
+  
+  let html = '<div class="flow-chart-container">';
+  
+  sortedRows.forEach((rowKey, rowIndex) => {
+    const rowSteps = rows[rowKey].sort((a, b) => a.position_x - b.position_x);
+    
+    html += `<div class="flow-row" data-row="${rowKey}">`;
+    
+    rowSteps.forEach((step, stepIndex) => {
+      const connections = allConnections.filter(c => c.from_step_id === step.id);
+      const hasNextInRow = stepIndex < rowSteps.length - 1;
+      const hasNextInNextRow = connections.some(c => {
+        const targetStep = allSteps.find(s => s.id === c.to_step_id);
+        return targetStep && targetStep.position_y > step.position_y;
+      });
+      
+      html += renderStepCardInFlow(step, hasNextInRow, hasNextInNextRow, connections);
+      
+      // Add arrow to next step in same row
+      if (hasNextInRow) {
+        html += `
+          <div class="flow-arrow">
+            <i class="fas fa-arrow-right text-gray-400"></i>
+          </div>
+        `;
+      }
+    });
+    
+    html += '</div>';
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Render a step card in flow layout
+function renderStepCardInFlow(step, hasNextInRow, hasNextInNextRow, connections) {
   const typeClass = `step-${step.step_type}`;
   const icon = getStepIcon(step.step_type);
   
+  // Get next step info for connection labels
+  let connectionLabel = '';
+  if (connections.length > 0) {
+    const labels = connections
+      .filter(c => c.label || c.condition_type)
+      .map(c => c.label || c.condition_type);
+    if (labels.length > 0) {
+      connectionLabel = `<div class="text-xs mt-1 opacity-70">→ ${labels.join(', ')}</div>`;
+    }
+  }
+  
   return `
-    <div class="step-card ${typeClass} rounded-lg shadow-md p-5 text-white" onclick="showStepDetails(${step.id})">
-      <div class="flex items-start justify-between mb-2">
-        <span class="text-sm opacity-80">Step ${step.step_number}</span>
-        <i class="${icon} text-xl opacity-80"></i>
-      </div>
-      <h3 class="text-lg font-bold mb-2">${step.step_name}</h3>
-      ${step.description ? `<p class="text-sm opacity-90">${step.description}</p>` : ''}
-      <div class="mt-3 pt-3 border-t border-white border-opacity-30">
-        <span class="text-xs opacity-80">
+    <div class="step-card-wrapper">
+      <div class="step-card ${typeClass}" onclick="showStepDetails(${step.id})">
+        <div class="flex items-start justify-between mb-1">
+          <span class="step-number">${step.step_number}</span>
+          <i class="${icon} text-lg"></i>
+        </div>
+        <h3 class="step-name">${step.step_name}</h3>
+        ${connectionLabel}
+        <div class="step-hint">
           <i class="fas fa-hand-pointer mr-1"></i>
-          터치하여 상세 정보 보기
-        </span>
+          상세 정보
+        </div>
       </div>
+      ${hasNextInNextRow ? '<div class="flow-arrow-down"><i class="fas fa-arrow-down text-gray-400"></i></div>' : ''}
     </div>
   `;
 }
@@ -133,19 +162,38 @@ async function showStepDetails(stepId) {
     const response = await axios.get(`/api/steps/${stepId}`);
     const step = response.data;
     
-    modalTitle.textContent = `${step.step_number}. ${step.step_name}`;
+    modalTitle.innerHTML = `
+      <div class="flex items-center">
+        <span class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mr-3">
+          ${step.step_number}
+        </span>
+        <span>${step.step_name}</span>
+      </div>
+    `;
     
     if (!step.criteria || step.criteria.length === 0) {
       modalContent.innerHTML = `
-        <div class="text-center py-8 text-gray-500">
-          <i class="fas fa-info-circle text-4xl mb-2"></i>
-          <p>이 단계에 대한 판단 기준이 아직 등록되지 않았습니다.</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <i class="fas fa-info-circle text-blue-500 text-4xl mb-3"></i>
+          <p class="text-gray-700 mb-2">이 단계에 대한 판단 기준이 아직 등록되지 않았습니다.</p>
+          <p class="text-sm text-gray-600">${step.description || ''}</p>
         </div>
       `;
       return;
     }
     
     let html = '<div class="space-y-4">';
+    
+    if (step.description) {
+      html += `
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 class="font-semibold text-gray-700 mb-2"><i class="fas fa-info-circle mr-2"></i>설명</h4>
+          <p class="text-gray-700">${step.description}</p>
+        </div>
+      `;
+    }
+    
+    html += '<h4 class="font-semibold text-gray-800 text-lg"><i class="fas fa-clipboard-check mr-2"></i>판단 기준</h4>';
     
     for (const criteria of step.criteria) {
       html += await renderCriteriaCard(criteria);
@@ -168,18 +216,18 @@ async function showStepDetails(stepId) {
 // Render criteria card with documents
 async function renderCriteriaCard(criteria) {
   let html = `
-    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      <h3 class="text-lg font-bold text-gray-800 mb-2">
-        <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>
+    <div class="criteria-card border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">
+        <i class="fas fa-check-square text-blue-600 mr-2"></i>
         ${criteria.criteria_title}
       </h3>
       ${criteria.criteria_description ? `<p class="text-gray-700 mb-3">${criteria.criteria_description}</p>` : ''}
       
-      <div class="grid md:grid-cols-2 gap-3 mb-3">
+      <div class="grid md:grid-cols-2 gap-3 mb-4">
         ${criteria.pass_condition ? `
-          <div class="bg-green-50 border border-green-200 rounded p-3">
-            <div class="flex items-center mb-1">
-              <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          <div class="condition-box pass-condition">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-check-circle text-green-600 text-xl mr-2"></i>
               <span class="font-semibold text-green-800">합격 조건</span>
             </div>
             <p class="text-sm text-green-700">${criteria.pass_condition}</p>
@@ -187,9 +235,9 @@ async function renderCriteriaCard(criteria) {
         ` : ''}
         
         ${criteria.fail_condition ? `
-          <div class="bg-red-50 border border-red-200 rounded p-3">
-            <div class="flex items-center mb-1">
-              <i class="fas fa-times-circle text-red-600 mr-2"></i>
+          <div class="condition-box fail-condition">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-times-circle text-red-600 text-xl mr-2"></i>
               <span class="font-semibold text-red-800">불합격 조건</span>
             </div>
             <p class="text-sm text-red-700">${criteria.fail_condition}</p>
@@ -198,39 +246,46 @@ async function renderCriteriaCard(criteria) {
       </div>
       
       <button 
-        onclick="showCriteriaDocuments(${criteria.id})" 
-        class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+        onclick="toggleCriteriaDocuments(${criteria.id})" 
+        class="document-toggle-btn"
       >
         <i class="fas fa-folder-open mr-2"></i>
         관련 자료 보기
+        <i class="fas fa-chevron-down ml-2 toggle-icon"></i>
       </button>
       
-      <div id="documents-${criteria.id}" class="mt-3" style="display: none;"></div>
+      <div id="documents-${criteria.id}" class="documents-container" style="display: none;"></div>
     </div>
   `;
   
   return html;
 }
 
-// Show documents for a criteria
-async function showCriteriaDocuments(criteriaId) {
+// Toggle documents visibility
+async function toggleCriteriaDocuments(criteriaId) {
   const container = document.getElementById(`documents-${criteriaId}`);
+  const button = container.previousElementSibling;
+  const icon = button.querySelector('.toggle-icon');
   
   if (container.style.display === 'block') {
     container.style.display = 'none';
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
     return;
   }
   
   try {
     container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>';
     container.style.display = 'block';
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
     
     const response = await axios.get(`/api/criteria/${criteriaId}`);
     const criteria = response.data;
     
     if (!criteria.documents || criteria.documents.length === 0) {
       container.innerHTML = `
-        <div class="text-center py-4 text-gray-500">
+        <div class="text-center py-4 text-gray-500 bg-gray-50 rounded mt-3">
           <i class="fas fa-folder-open text-2xl mb-2"></i>
           <p class="text-sm">등록된 자료가 없습니다.</p>
         </div>
@@ -238,28 +293,31 @@ async function showCriteriaDocuments(criteriaId) {
       return;
     }
     
-    let html = '<div class="space-y-2">';
+    let html = '<div class="documents-list mt-3">';
     
     criteria.documents.forEach(doc => {
       const icon = getDocumentIcon(doc.document_type);
+      const typeLabel = getDocumentTypeLabel(doc.document_type);
       html += `
-        <div class="document-link">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center flex-1">
-              <i class="${icon} text-blue-600 mr-3 text-xl"></i>
-              <div>
+        <div class="document-item">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start flex-1">
+              <div class="document-icon">
+                <i class="${icon}"></i>
+              </div>
+              <div class="flex-1">
                 <div class="font-semibold text-gray-800">${doc.title}</div>
-                ${doc.description ? `<div class="text-sm text-gray-600">${doc.description}</div>` : ''}
+                ${doc.description ? `<div class="text-sm text-gray-600 mt-1">${doc.description}</div>` : ''}
+                ${doc.file_url ? `
+                  <div class="text-sm text-blue-600 mt-2">
+                    <i class="fas fa-link mr-1"></i>
+                    <span>${doc.file_url}</span>
+                  </div>
+                ` : ''}
               </div>
             </div>
-            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${getDocumentTypeLabel(doc.document_type)}</span>
+            <span class="document-type-badge">${typeLabel}</span>
           </div>
-          ${doc.file_url ? `
-            <div class="mt-2 text-sm text-gray-500">
-              <i class="fas fa-link mr-1"></i>
-              <span class="text-blue-600">${doc.file_url}</span>
-            </div>
-          ` : ''}
         </div>
       `;
     });
@@ -270,7 +328,7 @@ async function showCriteriaDocuments(criteriaId) {
   } catch (error) {
     console.error('Failed to load documents:', error);
     container.innerHTML = `
-      <div class="text-center text-red-500 py-4">
+      <div class="text-center text-red-500 py-4 bg-red-50 rounded mt-3">
         <i class="fas fa-exclamation-triangle mb-2"></i>
         <p class="text-sm">자료를 불러오는데 실패했습니다.</p>
       </div>
